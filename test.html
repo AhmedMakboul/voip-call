@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WebSocket Test Client</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #log { border: 1px solid #ccc; padding: 10px; height: 200px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <h2>🧩 WebSocket Signaling Test</h2>
+
+  <label>Client ID: <input id="clientId" placeholder="user1" /></label>
+  <button id="connectBtn">Connect</button>
+  <hr>
+  <textarea id="message" rows="3" cols="40" placeholder="Type message..."></textarea><br>
+  <button id="sendBtn">Send</button>
+  <div id="log"></div>
+
+  <script>
+    let ws;
+    const logDiv = document.getElementById("log");
+
+    function log(msg) {
+      const p = document.createElement("div");
+      p.textContent = msg;
+      logDiv.appendChild(p);
+    }
+
+    document.getElementById("connectBtn").onclick = () => {
+      const id = document.getElementById("clientId").value.trim();
+      if (!id) return alert("Enter client ID");
+      ws = new WebSocket(`ws://${location.hostname}:8000/ws/${id}`);
+      ws.onopen = () => log("✅ Connected as " + id);
+      ws.onmessage = (e) => log("📩 Received: " + e.data);
+      ws.onclose = () => log("❌ Disconnected");
+    };
+
+    document.getElementById("sendBtn").onclick = () => {
+      const msg = document.getElementById("message").value;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(msg);
+        log("📤 Sent: " + msg);
+      }
+    };
+  </script>
+</body>
+</html>

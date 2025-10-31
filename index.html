@@ -1,0 +1,288 @@
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+<!--  <meta charset="utf-8" />-->
+<!--  <title>Simple Web VoIP</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--  <h2>🎙 Simple WebRTC Voice Call</h2>-->
+<!--  <button id="start">Start Call</button>-->
+<!--  <audio id="remoteAudio" autoplay></audio>-->
+
+<!--  <script>-->
+<!--    const ws = new WebSocket("ws://" + location.host + "/ws");-->
+
+
+<!--    const pc = new RTCPeerConnection({-->
+<!--      iceServers: [-->
+<!--        { urls: "stun:stun.l.google.com:19302" }-->
+<!--      ]-->
+<!--    });-->
+
+
+
+
+<!--    // Play remote audio-->
+<!--    pc.ontrack = e => {-->
+<!--      document.getElementById("remoteAudio").srcObject = e.streams[0];-->
+<!--    };-->
+
+<!--    // Exchange ICE candidates-->
+<!--    pc.onicecandidate = e => {-->
+<!--      if (e.candidate) ws.send(JSON.stringify({ "ice": e.candidate }));-->
+<!--    };-->
+
+<!--    ws.onmessage = async (e) => {-->
+<!--      const data = JSON.parse(e.data);-->
+<!--      if (data.offer) {-->
+<!--        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));-->
+<!--        const answer = await pc.createAnswer();-->
+<!--        await pc.setLocalDescription(answer);-->
+<!--        ws.send(JSON.stringify({ "answer": answer }));-->
+<!--      } else if (data.answer) {-->
+<!--        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));-->
+<!--      } else if (data.ice) {-->
+<!--        try { await pc.addIceCandidate(data.ice); } catch {}-->
+<!--      }-->
+<!--    };-->
+
+<!--    document.getElementById("start").onclick = async () => {-->
+<!--      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });-->
+<!--      stream.getTracks().forEach(t => pc.addTrack(t, stream));-->
+
+<!--      const offer = await pc.createOffer();-->
+<!--      await pc.setLocalDescription(offer);-->
+<!--      ws.send(JSON.stringify({ "offer": offer }));-->
+<!--    };-->
+<!--  </script>-->
+<!--</body>-->
+<!--</html>-->
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+<!--  <meta charset="utf-8" />-->
+<!--  <title>Two-Way WebRTC Voice Call</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--  <h2>🎧 Two-Way Voice Call (Peer-to-Peer)</h2>-->
+<!--  <button id="start">Start Call</button>-->
+<!--  <audio id="remoteAudio" autoplay></audio>-->
+
+<!--  <script>-->
+<!--    const ws = new WebSocket("ws://" + location.host + "/ws");-->
+
+<!--   const pc = new RTCPeerConnection({-->
+<!--    iceTransportPolicy: "all",-->
+<!--    iceServers: [-->
+<!--      { urls: "stun:stun.l.google.com:19302" }-->
+<!--    ]-->
+<!--  });-->
+
+
+<!--    // When remote audio arrives-->
+<!--    pc.ontrack = e => {-->
+<!--      document.getElementById("remoteAudio").srcObject = e.streams[0];-->
+<!--    };-->
+
+<!--    // Exchange ICE candidates-->
+<!--    pc.onicecandidate = e => {-->
+<!--      if (e.candidate) {-->
+<!--        ws.send(JSON.stringify({ ice: e.candidate }));-->
+<!--      }-->
+<!--    };-->
+
+<!--    ws.onmessage = async (e) => {-->
+<!--      const data = JSON.parse(e.data);-->
+<!--      if (data.offer) {-->
+<!--        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));-->
+<!--        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });-->
+<!--        stream.getTracks().forEach(t => pc.addTrack(t, stream));-->
+<!--        const answer = await pc.createAnswer();-->
+<!--        await pc.setLocalDescription(answer);-->
+<!--        ws.send(JSON.stringify({ answer }));-->
+<!--      } else if (data.answer) {-->
+<!--        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));-->
+<!--      } else if (data.ice) {-->
+<!--        try { await pc.addIceCandidate(data.ice); } catch (err) { console.error(err); }-->
+<!--      }-->
+<!--    };-->
+
+<!--    document.getElementById("start").onclick = async () => {-->
+<!--      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });-->
+<!--      stream.getTracks().forEach(t => pc.addTrack(t, stream));-->
+
+<!--      const offer = await pc.createOffer();-->
+<!--      await pc.setLocalDescription(offer);-->
+<!--      ws.send(JSON.stringify({ offer }));-->
+<!--    };-->
+<!--  </script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+<!--  <meta charset="utf-8">-->
+<!--  <title>LAN Voice Call</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--  <h2>🎧 Fast Two-Way Voice Call</h2>-->
+<!--  <p>Your ID: <span id="myid"></span></p>-->
+<!--  <button id="callBtn">Start Call</button>-->
+<!--  <audio id="remoteAudio" autoplay></audio>-->
+
+<!--  <script>-->
+<!--    // ===== 1️⃣ Setup WebSocket connection =====-->
+<!--    const myId = prompt("Enter your name (e.g. user1 or user2)");-->
+<!--    document.getElementById("myid").textContent = myId;-->
+<!--    const ws = new WebSocket("ws://" + location.host + "/ws/" + myId);-->
+
+<!--    // ===== 2️⃣ WebRTC setup =====-->
+<!--    const pc = new RTCPeerConnection({-->
+<!--      iceTransportPolicy: "all",-->
+<!--      iceServers: [-->
+<!--        { urls: "stun:stun.l.google.com:19302" }, // Fast public STUN-->
+<!--        { urls: "stun:stun1.l.google.com:19302" }-->
+<!--      ]-->
+<!--    });-->
+
+<!--    // ===== 3️⃣ Handle remote audio =====-->
+<!--    pc.ontrack = (event) => {-->
+<!--      document.getElementById("remoteAudio").srcObject = event.streams[0];-->
+<!--    };-->
+
+<!--    // ===== 4️⃣ Send ICE candidates via WebSocket =====-->
+<!--    pc.onicecandidate = (event) => {-->
+<!--      if (event.candidate) {-->
+<!--        ws.send(JSON.stringify({ "from": myId, "ice": event.candidate }));-->
+<!--      }-->
+<!--    };-->
+
+<!--    // ===== 5️⃣ Handle incoming signaling messages =====-->
+<!--    ws.onmessage = async (event) => {-->
+<!--      const data = JSON.parse(event.data);-->
+
+<!--      if (data.offer && data.from !== myId) {-->
+<!--        console.log("📨 Offer received from", data.from);-->
+<!--        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));-->
+<!--        const answer = await pc.createAnswer();-->
+<!--        await pc.setLocalDescription(answer);-->
+<!--        ws.send(JSON.stringify({ "from": myId, "answer": answer }));-->
+<!--      }-->
+
+<!--      else if (data.answer && data.from !== myId) {-->
+<!--        console.log("📨 Answer received from", data.from);-->
+<!--        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));-->
+<!--      }-->
+
+<!--      else if (data.ice && data.from !== myId) {-->
+<!--        try {-->
+<!--          await pc.addIceCandidate(data.ice);-->
+<!--        } catch (e) {-->
+<!--          console.warn("Error adding ICE", e);-->
+<!--        }-->
+<!--      }-->
+<!--    };-->
+
+<!--    // ===== 6️⃣ Start the call =====-->
+<!--    document.getElementById("callBtn").onclick = async () => {-->
+<!--      const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });-->
+<!--      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));-->
+
+<!--      const offer = await pc.createOffer();-->
+<!--      await pc.setLocalDescription(offer);-->
+<!--      ws.send(JSON.stringify({ "from": myId, "offer": offer }));-->
+<!--    };-->
+<!--  </script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Two-Way WebRTC Voice Chat</title>
+</head>
+<body>
+  <h2>🎙 Two-Way WebRTC Voice Chat</h2>
+  <input id="clientId" placeholder="Enter your ID" />
+  <button id="joinBtn">Join</button>
+  <button id="callBtn" disabled>Start Call</button>
+  <audio id="remoteAudio" autoplay></audio>
+
+  <script>
+    let ws, pc, localStream;
+    const remoteAudio = document.getElementById("remoteAudio");
+    const joinBtn = document.getElementById("joinBtn");
+    const callBtn = document.getElementById("callBtn");
+    const clientIdInput = document.getElementById("clientId");
+
+    joinBtn.onclick = async () => {
+      const id = clientIdInput.value.trim();
+      if (!id) return alert("Enter an ID first!");
+      ws = new WebSocket("ws://" + location.host + "/ws/" + id);
+
+      ws.onopen = () => {
+        console.log("✅ Connected to signaling server");
+        callBtn.disabled = false;
+      };
+
+      ws.onmessage = async (e) => {
+        const data = JSON.parse(e.data);
+
+        if (data.offer) {
+          await createPeerConnection();
+          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({ answer }));
+
+        } else if (data.answer) {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+        } else if (data.ice) {
+          try {
+            await pc.addIceCandidate(data.ice);
+          } catch (err) {
+            console.warn("ICE error:", err);
+          }
+        }
+      };
+    };
+
+    callBtn.onclick = async () => {
+      await createPeerConnection();
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      ws.send(JSON.stringify({ offer }));
+    };
+
+    async function createPeerConnection() {
+      if (pc) return; // already exists
+
+      pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" }
+        ]
+      });
+
+      // Ask for mic permission properly
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+      pc.ontrack = (event) => {
+        remoteAudio.srcObject = event.streams[0];
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          ws.send(JSON.stringify({ ice: event.candidate }));
+        }
+      };
+    }
+  </script>
+</body>
+</html>
